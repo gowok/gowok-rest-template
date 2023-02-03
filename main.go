@@ -1,15 +1,17 @@
 package main
 
 import (
-	"context"
 	"log"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gowok/gowok"
 	"github.com/gowok/gowok-rest-template/infrastructure/db"
 	"github.com/gowok/gowok-rest-template/infrastructure/repository"
+	"github.com/gowok/gowok-rest-template/module/auth"
 	"github.com/gowok/ioc"
 )
 
+// init dependencies
 func init() {
 	conf, err := gowok.Configure()
 	if err != nil {
@@ -17,22 +19,33 @@ func init() {
 	}
 
 	ioc.Set(func() gowok.Config { return conf })
-}
 
-func init() {
 	d, err := db.New()
 	if err != nil {
 		panic(err)
 	}
 
 	ioc.Set(func() db.DB { return *d })
+
+	ioc.Set(func() fiber.App { return *fiber.New() })
 }
 
+// init repositories
 func init() {
 	ioc.Set(func() repository.UserReader { return *repository.NewUserReader() })
 }
 
+// init modules
+func init() {
+	auth.InitModule()
+}
+
 func main() {
-	userReader := ioc.Get(repository.UserReader{})
-	log.Fatal(userReader.GetUserByEmail(context.Background(), "alexunder@gmail.com"))
+	go gowok.GracefulStop(func() {
+		log.Default().Println("shutdown ...")
+	})
+
+	conf := ioc.Get(gowok.Config{})
+	app := ioc.Get(fiber.App{})
+	app.Listen(conf.App.Rest.Host)
 }
