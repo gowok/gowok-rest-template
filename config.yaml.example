@@ -1,0 +1,10 @@
+app:
+  rest:
+    enabled: true
+    host: :8080
+
+databases:
+  - dsn: 'host=localhost user=postgres password= database=postgres port=5432 sslmode=disable
+
+security:
+  secret: <your app secret>

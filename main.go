@@ -1,51 +1,26 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/gowok/gowok"
-	"github.com/gowok/gowok-rest-template/infrastructure/db"
-	"github.com/gowok/gowok-rest-template/infrastructure/repository"
-	"github.com/gowok/gowok-rest-template/module/auth"
-	"github.com/gowok/ioc"
+	"github.com/gowok/gowok-rest-template/internal"
+	"github.com/gowok/gowok-rest-template/pkg"
+	"github.com/gowok/gowok-rest-template/rest"
 )
 
-// init dependencies
 func init() {
-	conf, err := gowok.Configure()
-	if err != nil {
-		panic(err)
-	}
-
-	ioc.Set(func() gowok.Config { return conf })
-
-	d, err := db.New()
-	if err != nil {
-		panic(err)
-	}
-
-	ioc.Set(func() db.DB { return *d })
-
-	ioc.Set(func() fiber.App { return *fiber.New() })
-}
-
-// init repositories
-func init() {
-	ioc.Set(func() repository.UserReader { return *repository.NewUserReader() })
-}
-
-// init modules
-func init() {
-	auth.InitModule()
+	pkg.PrepareAll()
+	internal.PrepareAll()
+	rest.PrepareAll()
 }
 
 func main() {
-	go gowok.GracefulStop(func() {
-		log.Default().Println("shutdown ...")
-	})
+	rest.Run()
 
-	conf := ioc.Get(gowok.Config{})
-	app := ioc.Get(fiber.App{})
-	app.Listen(conf.App.Rest.Host)
+	go gowok.StartPProf()
+	gowok.GracefulStop(func() {
+		fmt.Println()
+		fmt.Println("Stopping...")
+	})
 }
